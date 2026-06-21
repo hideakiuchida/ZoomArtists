@@ -1,0 +1,46 @@
+[project]
+name = "zoomartists-backend"
+version = "0.1.0"
+description = "ZoomArtists API — artistic events platform"
+requires-python = ">=3.13"
+dependencies = [
+    # Web framework
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    # Database
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "geoalchemy2>=0.15",
+    "alembic>=1.14",
+    # Validation
+    "pydantic[email]>=2.10",
+    "pydantic-settings>=2.7",
+    # Auth
+    "python-jose[cryptography]>=3.3",
+    "bcrypt>=4.1",
+    "python-multipart>=0.0.20",
+    # Cache
+    "redis[hiredis]>=5.2",
+    # Rate limiting
+    "slowapi>=0.1.9",
+    # HTTP client (OAuth)
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28",
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

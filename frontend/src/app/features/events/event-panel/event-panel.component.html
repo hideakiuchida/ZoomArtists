@@ -1,0 +1,148 @@
+<aside class="event-panel" [@slideIn]>
+  <!-- Close button -->
+  <button class="panel-close" (click)="close()">✕</button>
+
+  @if (!event()) {
+    <!-- Skeleton while loading -->
+    <div class="panel-skeleton">
+      <div class="skel skel-cover"></div>
+      <div class="panel-body">
+        <div class="skel skel-badge"></div>
+        <div class="skel skel-title"></div>
+        <div class="skel skel-line"></div>
+        <div class="skel skel-line short"></div>
+      </div>
+    </div>
+  } @else {
+    <!-- Cover image -->
+    <div class="panel-cover" [style.background-image]="event()!.cover_image ? 'url(' + event()!.cover_image + ')' : 'none'"
+         [style.--accent]="categoryColor(event()!.category)">
+      <div class="cover-gradient"></div>
+      <div class="cover-content">
+        <span class="category-badge">
+          {{ categoryIcon(event()!.category) }} {{ categoryLabel(event()!.category) }}
+        </span>
+        <h1 class="event-title">{{ event()!.title }}</h1>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <!-- Meta info -->
+      <div class="event-meta">
+        <div class="meta-row">
+          <span class="meta-icon">📍</span>
+          <a [href]="googleMapsUrl(event()!.venue)" target="_blank" class="meta-link">
+            {{ event()!.venue.name }}
+            @if (event()!.distance_meters) {
+              <span class="meta-dist"> · {{ formatDistance(event()!.distance_meters) }}</span>
+            }
+          </a>
+        </div>
+        <div class="meta-row">
+          <span class="meta-icon">📅</span>
+          <span>{{ formatDate(event()!.start_date) }} · {{ formatTime(event()!.start_date) }}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-icon">💰</span>
+          <span>{{ event()!.is_free ? 'Entrada libre' : ('$' + event()!.ticket_price + ' ' + event()!.currency) }}</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="panel-actions">
+        @if (event()!.ticket_url) {
+          <a [href]="event()!.ticket_url!" target="_blank" class="btn-primary" [style.background]="categoryColor(event()!.category)">
+            Obtener entradas
+          </a>
+        }
+        <button class="btn-icon" (click)="saveEvent()" title="Guardar">♥</button>
+        <button class="btn-icon" (click)="share()" title="Compartir">↗</button>
+      </div>
+
+      <!-- Description -->
+      @if (event()!.description) {
+        <p class="event-description">{{ event()!.description }}</p>
+      }
+
+      <!-- Artists section -->
+      @if (event()!.artists.length > 0) {
+        <section class="panel-section">
+          <h2 class="section-title">Artistas</h2>
+          <div class="artists-list">
+            @for (artist of event()!.artists; track artist.id) {
+              <div class="artist-card" (click)="toggleArtist(artist.id)">
+                <div class="artist-avatar"
+                     [style.background-image]="artist.profile_image ? 'url(' + artist.profile_image + ')' : 'none'">
+                  @if (!artist.profile_image) { <span>🎭</span> }
+                </div>
+                <div class="artist-info">
+                  <div class="artist-name">{{ artist.name }}</div>
+                  <div class="artist-genres">{{ artist.genres.join(', ') }}</div>
+                </div>
+                <span class="artist-chevron" [class.rotated]="expandedArtistId === artist.id">›</span>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Video embed -->
+      @if (event()!.video_url) {
+        <section class="panel-section">
+          <h2 class="section-title">Video</h2>
+          <div class="video-wrapper">
+            <iframe [src]="event()!.video_url" frameborder="0" allowfullscreen></iframe>
+          </div>
+        </section>
+      }
+
+      <!-- Gallery -->
+      @if (event()!.gallery?.length) {
+        <section class="panel-section">
+          <h2 class="section-title">Galería</h2>
+          <div class="gallery-scroll">
+            @for (img of event()!.gallery; track img) {
+              <img [src]="img" [alt]="event()!.title" class="gallery-thumb" loading="lazy"
+                   (error)="$any($event.target).style.display = 'none'" />
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Venue detail -->
+      <section class="panel-section">
+        <h2 class="section-title">Venue</h2>
+        <div class="venue-card">
+          <div class="venue-name">{{ event()!.venue.name }}</div>
+          <div class="venue-address">{{ event()!.venue.address }}, {{ event()!.venue.city }}</div>
+          @if (event()!.venue.accessibility?.length) {
+            <div class="venue-tags">
+              @for (tag of event()!.venue.accessibility; track tag) {
+                <span class="tag">♿ {{ tag }}</span>
+              }
+            </div>
+          }
+          @if (event()!.venue.transit_info?.length) {
+            <div class="venue-tags">
+              @for (info of event()!.venue.transit_info; track info) {
+                <span class="tag">🚇 {{ info }}</span>
+              }
+            </div>
+          }
+          <a [href]="googleMapsUrl(event()!.venue)" target="_blank" class="venue-map-link">
+            Ver en Google Maps ↗
+          </a>
+        </div>
+      </section>
+
+      <!-- Tags -->
+      @if (event()!.tags?.length) {
+        <div class="event-tags">
+          @for (tag of event()!.tags; track tag) {
+            <span class="tag">#{{ tag }}</span>
+          }
+        </div>
+      }
+    </div>
+  }
+</aside>

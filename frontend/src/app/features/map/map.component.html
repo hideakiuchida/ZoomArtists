@@ -1,0 +1,59 @@
+<div class="map-root">
+  <!-- Full-screen map container -->
+  <div #mapContainer class="map-canvas"></div>
+
+  <!-- Floating header -->
+  <header class="map-header glass">
+    <div class="header-logo">
+      <span class="logo-icon">🎭</span>
+      <span class="logo-text">ZoomArtists</span>
+    </div>
+    <app-search-bar (flyTo)="flyTo($event.lng, $event.lat)" />
+    <div class="header-actions">
+      @if (isLoading()) {
+        <div class="loading-dot"></div>
+      }
+    </div>
+  </header>
+
+  <!-- Category filter pills -->
+  <div class="category-filters glass">
+    <button
+      class="filter-pill"
+      [class.active]="activeCategory() === null"
+      (click)="setCategory(null)"
+    >All</button>
+    @for (cat of categories; track cat.value) {
+      <button
+        class="filter-pill"
+        [class.active]="activeCategory() === cat.value"
+        [style.--pill-color]="'var(--color-' + cat.value.replace('_','-') + ')'"
+        (click)="setCategory(cat.value)"
+      >{{ cat.icon }}</button>
+    }
+  </div>
+
+  <!-- Bottom controls -->
+  <div class="map-bottom-controls">
+    <!-- Radius selector -->
+    <div class="radius-selector glass">
+      @for (opt of radiusOptions; track opt.value) {
+        <button
+          class="radius-btn"
+          [class.active]="selectedRadius() === opt.value"
+          (click)="setRadius(opt.value)"
+        >{{ opt.label }}</button>
+      }
+    </div>
+
+    <!-- Center on user -->
+    <button class="locate-btn glass" (click)="centerOnUser()" title="Mi ubicación">
+      🎯
+    </button>
+  </div>
+
+  <!-- Event detail panel (right sidebar) -->
+  @if (isPanelOpen()) {
+    <app-event-panel />
+  }
+</div>
