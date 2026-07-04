@@ -17,6 +17,7 @@ export class EventService {
   selectedEvent = signal<EventResponse | null>(null);
   nearbyEvents = signal<EventSummary[]>([]);
   isPanelOpen = signal(false);
+  isLoadingEvent = signal(false);
 
   constructor(private http: HttpClient) {}
 
@@ -44,11 +45,14 @@ export class EventService {
 
   openPanel(id: string): void {
     this.isPanelOpen.set(true);
-    this.getById(id).subscribe();
+    this.isLoadingEvent.set(true);
+    this.selectedEvent.set(null);
+    this.getById(id).subscribe({ complete: () => this.isLoadingEvent.set(false) });
   }
 
   closePanel(): void {
     this.isPanelOpen.set(false);
+    this.isLoadingEvent.set(false);
     this.selectedEvent.set(null);
   }
 

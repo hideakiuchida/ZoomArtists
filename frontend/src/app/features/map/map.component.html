@@ -52,8 +52,7 @@
     </button>
   </div>
 
-  <!-- Event detail panel (right sidebar) -->
-  @if (isPanelOpen()) {
-    <app-event-panel />
-  }
+  <!-- Details panel (right sidebar in web mode): shows the top-events list when
+       nothing is selected, or the event detail once one is chosen. -->
+  <app-event-panel />
 </div>

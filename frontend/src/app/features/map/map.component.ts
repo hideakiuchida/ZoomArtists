@@ -37,6 +37,17 @@ export class MapComponent implements OnInit, OnDestroy {
   private ringReady = false;
   private pulseFrame: number | null = null;
 
+  // Screen insets (px) reserved by floating UI + the right details panel, used
+  // to keep the search circle centered inside the *visible* area and zoomed so
+  // it always fits regardless of screen size.
+  private readonly TOP_INSET = 132; // header + category pills
+  private readonly BOTTOM_INSET = 84; // radius selector row
+  private readonly SIDE_INSET = 48;
+  private readonly PANEL_WIDTH = 380; // right details panel (web mode)
+
+  private resizeHandler = () => this.onResize();
+  private resizeDebounce: ReturnType<typeof setTimeout> | null = null;
+
   private eventService = inject(EventService);
   private geoService = inject(GeolocationService);
 
@@ -60,7 +71,6 @@ export class MapComponent implements OnInit, OnDestroy {
     { value: 'dance', icon: '💃' },
   ];
 
-  isPanelOpen = this.eventService.isPanelOpen;
   nearbyEvents = this.eventService.nearbyEvents;
 
   constructor() {
@@ -88,6 +98,8 @@ export class MapComponent implements OnInit, OnDestroy {
 
     this.map.on('load', () => {
       this.addRadiusLayers();
+      this.applyPadding();
+      this.fitRadius(false);
       this.updateRadiusRing();
       this.startRingPulse();
     });
@@ -104,6 +116,8 @@ export class MapComponent implements OnInit, OnDestroy {
         this.popupRef = null;
       }
     });
+
+    window.addEventListener('resize', this.resizeHandler);
   }
 
   private loadEvents(lat: number, lng: number): void {
@@ -194,10 +208,56 @@ export class MapComponent implements OnInit, OnDestroy {
     this.selectedRadius.set(radius);
     if (!this.map) return;
     // Resize the ring immediately, then zoom the map so the chosen radius fills
-    // the view. fitBounds fires `moveend`, which reloads events with the new radius.
+    // the visible area. easeTo fires `moveend`, which reloads events.
     this.updateRadiusRing();
-    const c = this.map.getCenter();
-    this.map.fitBounds(this.radiusBounds(c.lng, c.lat, radius), { padding: 80, duration: 800 });
+    this.fitRadius(true);
+  }
+
+  /* ── Responsive framing ──────────────────────────────────────────────────── */
+
+  // The right details panel is permanently on screen in web mode; on narrow
+  // screens it becomes a bottom sheet and no longer steals horizontal space.
+  private panelVisible(): boolean {
+    return window.innerWidth > 640;
+  }
+
+  // Padding reserved by the floating UI + right panel. Setting it on the map
+  // makes `getCenter()` return the center of the *visible* area, so the search
+  // ring (drawn at the center) stays centered on screen and clear of the panel.
+  private currentPadding(): { top: number; bottom: number; left: number; right: number } {
+    const right = this.SIDE_INSET + (this.panelVisible() ? this.PANEL_WIDTH : 0);
+    return { top: this.TOP_INSET, bottom: this.BOTTOM_INSET, left: this.SIDE_INSET, right };
+  }
+
+  private applyPadding(): void {
+    this.map.setPadding(this.currentPadding());
+  }
+
+  // Zoom the map so the search circle's diameter fills ~90% of the smaller
+  // visible dimension — the circle is always fully visible, at any screen size
+  // and for any selected radius.
+  private fitRadius(animate: boolean): void {
+    if (!this.map) return;
+    const el = this.mapContainer.nativeElement;
+    const pad = this.currentPadding();
+    const visW = Math.max(80, el.clientWidth - pad.left - pad.right);
+    const visH = Math.max(80, el.clientHeight - pad.top - pad.bottom);
+    const minDim = Math.min(visW, visH);
+    const lat = this.map.getCenter().lat;
+    const metersPerPixelAtZoom0 = 156_543.03392 * Math.cos((lat * Math.PI) / 180);
+    const targetMpp = (this.selectedRadius() * 2) / (minDim * 0.9);
+    const zoom = Math.log2(metersPerPixelAtZoom0 / targetMpp);
+    this.map.easeTo({ zoom, duration: animate ? 700 : 0 });
+  }
+
+  private onResize(): void {
+    if (!this.map) return;
+    if (this.resizeDebounce) clearTimeout(this.resizeDebounce);
+    this.resizeDebounce = setTimeout(() => {
+      this.map.resize();
+      this.applyPadding();
+      this.fitRadius(false);
+    }, 150);
   }
 
   setCategory(cat: EventCategory | null): void {
@@ -208,17 +268,6 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   /* ── Search-radius ring ──────────────────────────────────────────────────── */
-
-  // A square bounding box that exactly circumscribes the radius circle, used to
-  // frame the map at the right zoom for each radius option.
-  private radiusBounds(lng: number, lat: number, radius: number): maplibregl.LngLatBoundsLike {
-    const dLat = radius / 111_320;
-    const dLng = radius / (111_320 * Math.cos((lat * Math.PI) / 180));
-    return [
-      [lng - dLng, lat - dLat],
-      [lng + dLng, lat + dLat],
-    ];
-  }
 
   // Approximate a geographic circle as a polygon for rendering on the map.
   private metersToCircle(lng: number, lat: number, radius: number, points = 72): any {
@@ -311,6 +360,8 @@ export class MapComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.pulseFrame !== null) cancelAnimationFrame(this.pulseFrame);
+    if (this.resizeDebounce) clearTimeout(this.resizeDebounce);
+    window.removeEventListener('resize', this.resizeHandler);
     this.map?.remove();
   }
 }

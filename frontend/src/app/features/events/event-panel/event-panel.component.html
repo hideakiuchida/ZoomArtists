@@ -1,9 +1,7 @@
-<aside class="event-panel" [@slideIn]>
-  <!-- Close button -->
-  <button class="panel-close" (click)="close()">✕</button>
-
-  @if (!event()) {
-    <!-- Skeleton while loading -->
+<aside class="event-panel" [class.has-selection]="!!event() || isLoadingEvent()">
+  @if (isLoadingEvent()) {
+    <!-- Skeleton while a selected event loads -->
+    <button class="panel-close" (click)="close()" title="Volver">←</button>
     <div class="panel-skeleton">
       <div class="skel skel-cover"></div>
       <div class="panel-body">
@@ -13,7 +11,58 @@
         <div class="skel skel-line short"></div>
       </div>
     </div>
+  } @else if (!event()) {
+    <!-- Top-events list: shown when the user hasn't selected anything yet -->
+    <div class="panel-list">
+      <header class="list-header">
+        <div>
+          <h2 class="list-title">Eventos cerca de ti</h2>
+          <p class="list-subtitle">Los más próximos a tu ubicación</p>
+        </div>
+        <span class="list-count">{{ topEvents().length }}</span>
+      </header>
+
+      @if (topEvents().length === 0) {
+        <div class="list-empty">
+          <span class="empty-emoji">🔭</span>
+          <p class="empty-title">No hay eventos en esta zona</p>
+          <p class="empty-hint">Mueve el mapa o amplía el radio de búsqueda.</p>
+        </div>
+      } @else {
+        <ul class="event-cards">
+          @for (ev of topEvents(); track ev.id) {
+            <li
+              class="event-card"
+              (click)="openEvent(ev.id)"
+              [style.--accent]="categoryColor(ev.category)"
+            >
+              <div
+                class="card-thumb"
+                [style.background-image]="ev.cover_image ? 'url(' + ev.cover_image + ')' : 'none'"
+              >
+                @if (!ev.cover_image) {
+                  <span class="thumb-icon">{{ categoryIcon(ev.category) }}</span>
+                }
+              </div>
+              <div class="card-info">
+                <span class="card-badge">{{ categoryIcon(ev.category) }} {{ categoryLabel(ev.category) }}</span>
+                <div class="card-title">{{ ev.title }}</div>
+                <div class="card-meta">
+                  📍 {{ ev.venue_name }}@if (ev.distance_meters) { · {{ formatDistance(ev.distance_meters) }} }
+                </div>
+                <div class="card-meta">📅 {{ formatDate(ev.start_date) }} · {{ formatTime(ev.start_date) }}</div>
+                <div class="card-price">
+                  {{ ev.is_free ? 'Gratis' : ('$' + ev.ticket_price + ' ' + ev.currency) }}
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
   } @else {
+    <!-- Back to the list -->
+    <button class="panel-close" (click)="close()" title="Volver">←</button>
     <!-- Cover image -->
     <div class="panel-cover" [style.background-image]="event()!.cover_image ? 'url(' + event()!.cover_image + ')' : 'none'"
          [style.--accent]="categoryColor(event()!.category)">

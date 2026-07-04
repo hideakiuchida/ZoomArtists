@@ -38,14 +38,21 @@
 
 ### 4.1 Mapa Interactivo (Vista Principal)
 
-- Mapa de pantalla completa renderizado con **Mapbox GL JS** o **Leaflet + OpenStreetMap**
+- Mapa de pantalla completa renderizado con **MapLibre GL JS** (estilo oscuro de OpenFreeMap)
 - Detección automática de geolocalización del usuario (con permiso)
-- Selector de radio de distancia: 1 km / 5 km / 10 km / 25 km / Sin límite
-- Marcadores agrupados (clustering) que se separan al hacer zoom
+- Selector de radio de distancia: 1 km / 5 km / 10 km / 25 km
+- **Círculo de radio auto-ajustado:** el círculo translúcido de búsqueda permanece siempre
+  centrado en el **área visible** del mapa y el zoom se recalcula para que quepa por completo,
+  ocupando ~90% de la dimensión visible más pequeña. Se re-ajusta al iniciar, al cambiar el
+  radio y al redimensionar la ventana (con *debounce*). El área visible se calcula descontando
+  la UI flotante (cabecera, filtros, controles) y el panel derecho de 380px en modo web, de modo
+  que el círculo nunca queda tapado por el panel. En mobile el panel es un *bottom sheet* y no
+  descuenta ancho.
 - Marcadores con íconos visuales diferenciados por categoría de evento
 - Animaciones suaves al desplazarse y hacer zoom
-- Controles: zoom, centrar en ubicación actual, cambiar estilo de mapa (claro/oscuro/artístico)
-- Filtros flotantes sobre el mapa: por categoría, fecha, precio (gratis / de pago), horario
+- Controles: zoom, centrar en ubicación actual
+- Filtros flotantes sobre el mapa: por categoría (centrados respecto al área visible, no al
+  viewport completo, para no descentrarse por el panel derecho en web)
 
 ### 4.2 Popup del Evento (al hacer click en marcador)
 
@@ -70,9 +77,20 @@ Popup compacto que aparece sobre el marcador con:
 
 ### 4.3 Panel Lateral Derecho — "Detalle del Evento" (Estilo Spotify)
 
-Panel deslizable desde la derecha (ancho: 380px en desktop, 100% en mobile):
+Panel a la derecha (ancho: 380px en desktop, 100% en mobile).
 
-**Secciones del panel:**
+**Comportamiento responsivo:**
+- **Web (> 640px):** el panel está **siempre visible**. Cuando el usuario aún no ha
+  seleccionado ningún evento, muestra un **resumen tipo lista de "eventos top"** — los eventos
+  cercanos ordenados por distancia (miniatura, badge de categoría, título, venue, distancia,
+  fecha y precio). Al hacer click en una tarjeta se abre el detalle del evento; el botón `[←]`
+  regresa a la lista.
+- **Mobile (≤ 640px):** el panel es un *bottom sheet* que **solo aparece al seleccionar** un
+  evento (desde un marcador). La lista de eventos top se oculta para no tapar el mapa.
+- Estados internos del panel: `cargando` (skeleton mientras se resuelve el detalle) →
+  `detalle` (evento seleccionado) → `lista` (sin selección).
+
+**Secciones del panel (vista de detalle):**
 
 #### Header del Evento
 - Imagen de portada a todo el ancho del panel con gradiente inferior
@@ -173,31 +191,37 @@ Formulario de creación de evento:
 ### 5.3 Layout General
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  [Logo]   [🔍 Buscar eventos, artistas, venues...]  [👤]│  ← Header flotante
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│   [🎵] [🎨] [🎭] [🎬] [All]  ←── Filtros flotantes     │
-│                                                         │
-│                    M A P A                              │
-│              (pantalla completa)           ┌──────────┐ │
-│                                            │  PANEL   │ │
-│        📍📍   📍                           │ LATERAL  │ │
-│                  📍📍                      │ DERECHO  │ │
-│           📍                               │          │ │
-│                                            │          │ │
-│                                            └──────────┘ │
-│  [Radio: 5km ▾]           [🎯 Mi ubicación]             │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────┬────────────┐
+│    [Logo] [🔍 Buscar...] [👤]  ← centrado │  PANEL     │
+│                                    en área │  DERECHO   │
+│      [All][🎵][🎨][🎭][🎬] ← filtros      │            │
+│                                  centrados │ ┌────────┐ │
+│              M A P A                       │ │ Evento │ │
+│   (área visible = viewport − panel)        │ │ top 1  │ │
+│          ╭───────────╮                     │ ├────────┤ │
+│          │  ◜ radio ◝ │  📍📍               │ │ Evento │ │
+│          │  ◟ círculo◞│    📍              │ │ top 2  │ │
+│          ╰───────────╯                     │ ├────────┤ │
+│                                            │ │  ...   │ │
+│  [1km 5km 10km 25km]      [🎯]             │ └────────┘ │
+└──────────────────────────────────────────┴────────────┘
+   El círculo se centra en el área visible (sin el panel) y
+   el zoom se ajusta para que quepa entero. La cabecera y los
+   filtros se centran respecto a esa misma área, no al viewport.
+   En web, sin selección el panel muestra la lista de eventos top.
 ```
 
 ### 5.4 Estados y Micro-interacciones
 
 - **Marcador hover:** Escala a 1.2x con sombra de color de categoría + nombre del evento en tooltip
 - **Marcador activo:** Pulso (ping animation) en el color de la categoría
-- **Panel lateral:** Slide-in desde la derecha con ease-out, backdrop blur en el mapa
+- **Panel lateral:** en web permanece fijo a la derecha (lista de eventos top ⇄ detalle); en
+  mobile entra como *bottom sheet* al seleccionar un evento. Glassmorphism con backdrop blur.
 - **Carga de eventos:** Skeleton screens mientras cargan los datos
-- **Radio de distancia:** Círculo translúcido visible en el mapa mostrando el área de búsqueda
+- **Radio de distancia:** Círculo translúcido centrado en el área visible; el zoom se auto-ajusta
+  para que el círculo entero quepa en pantalla (responsivo al tamaño de ventana y al radio elegido)
+- **UI flotante centrada:** cabecera y filtros de categoría se centran respecto al área visible
+  (viewport menos el panel de 380px en web) mediante la variable CSS `--panel-w`
 - **Fly-to:** Animación de vuelo suave al centrar en un evento desde búsqueda
 
 ---

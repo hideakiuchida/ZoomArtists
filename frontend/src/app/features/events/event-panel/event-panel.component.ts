@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { EventService } from '../../../core/services/event.service';
@@ -28,9 +28,21 @@ export class EventPanelComponent {
   authService = inject(AuthService);
 
   event = this.eventService.selectedEvent;
+  isLoadingEvent = this.eventService.isLoadingEvent;
   currentUser = this.authService.currentUser;
 
+  // Top events shown as a list summary when nothing is selected — nearest first.
+  topEvents = computed(() =>
+    [...this.eventService.nearbyEvents()].sort(
+      (a, b) => (a.distance_meters ?? Infinity) - (b.distance_meters ?? Infinity),
+    ),
+  );
+
   expandedArtistId: string | null = null;
+
+  openEvent(id: string): void {
+    this.eventService.openPanel(id);
+  }
 
   categoryColor(cat: string): string {
     return CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS] ?? '#7c3aed';

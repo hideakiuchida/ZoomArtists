@@ -13,6 +13,12 @@
   flex-direction: column;
 
   @media (max-width: 640px) {
+    // On phones the panel is a bottom sheet that only appears once an event is
+    // selected; the top-events list stays out of the way of the map.
+    &:not(.has-selection) {
+      display: none;
+    }
+
     width: 100vw;
     height: 80vh;
     top: auto;
@@ -21,6 +27,163 @@
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px 20px 0 0;
   }
+}
+
+/* ── Top-events list ─────────────────────────────────────────────────────── */
+.panel-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 16px 12px;
+  flex-shrink: 0;
+}
+
+.list-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.list-subtitle {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 2px 0 0;
+}
+
+.list-count {
+  flex-shrink: 0;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.9);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0 10px 16px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.event-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  &:active {
+    transform: scale(0.99);
+  }
+}
+
+.card-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: color-mix(in srgb, var(--accent) 28%, #16161f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
+
+.card-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.card-meta {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-price {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 2px;
+}
+
+.list-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 6px;
+}
+
+.empty-emoji {
+  font-size: 2.4rem;
+  opacity: 0.7;
+}
+.empty-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 6px 0 0;
+}
+.empty-hint {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
 }
 
 .panel-close {
