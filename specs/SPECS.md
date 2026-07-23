@@ -1,4 +1,8 @@
-# ZoomArtists — Especificaciones de Producto v1.0
+# ZoomArtists — Especificaciones de Producto v1.2
+
+> **Leyenda de estado:** ✅ implementado · 🚧 pendiente / parcial.
+> Las secciones sin marca describen decisiones de producto ya reflejadas en el código.
+> Datos de ejemplo sembrados alrededor de **Lima, Perú** (`seed.py`), precios en PEN.
 
 ---
 
@@ -102,27 +106,28 @@ Panel a la derecha (ancho: 380px en desktop, 100% en mobile).
 - Botones: `[Obtener Entradas]` `[♥]` `[↗ Compartir]`
 
 #### Artistas
-- Cards horizontales con foto del artista, nombre, género/disciplina
-- Click en card de artista expande mini-perfil con:
+- Cards horizontales con foto del artista, nombre, género/disciplina ✅
+- Click en card de artista expande mini-perfil con: 🚧
   - Bio corta (2-3 líneas)
   - Tags de género/estilo
   - Links a redes sociales (Instagram, Spotify, SoundCloud, YouTube)
   - Botón `[Seguir Artista]`
 
 #### Contenido Multimedia
-- Reproductor de audio embebido (preview de tracks si aplica)
-- Galería de imágenes del artista o eventos anteriores (scroll horizontal)
-- Video embed (YouTube/Vimeo) si está disponible
-- Reproducción automática de preview al abrir el panel (con ícono de mute visible)
+- Galería de imágenes del evento (scroll horizontal, `loading="lazy"`) ✅
+- Video embed (YouTube/Vimeo) vía `video_url` del evento ✅
+- Reproductor de audio embebido (preview de tracks si aplica) 🚧
+- Reproducción automática de preview al abrir el panel (con ícono de mute visible) 🚧
 
 #### Detalles del Venue
-- Mapa en miniatura del venue dentro del panel
-- Dirección completa
-- Información de accesibilidad
-- Transporte cercano (metro, bus)
-- Capacidad y aforo
+- Dirección completa ✅
+- Información de accesibilidad ✅
+- Transporte cercano (metro, bus) ✅
+- Link a Google Maps ✅
+- Mapa en miniatura del venue dentro del panel 🚧
+- Capacidad y aforo 🚧
 
-#### Más Eventos en este Venue
+#### Más Eventos en este Venue 🚧
 - Scroll horizontal de cards de próximos eventos en el mismo lugar
 
 #### Footer del Panel
@@ -131,24 +136,39 @@ Panel a la derecha (ancho: 380px en desktop, 100% en mobile).
 
 ### 4.4 Barra de Búsqueda Global
 
-- Barra flotante centrada en la parte superior del mapa
+- Barra flotante centrada en la parte superior del mapa ✅
+- Autocompletado con debounce RxJS y resultados en tiempo real ✅ (UI)
+- Al seleccionar resultado: el mapa vuela (fly-to) hacia la ubicación ✅
 - Búsqueda por: nombre de evento, artista, venue, género, ciudad
-- Autocompletado con resultados en tiempo real
-- Al seleccionar resultado: el mapa vuela (fly-to) hacia la ubicación
 
-### 4.5 Publicación de Eventos (para artistas/organizadores)
+> ⚠️ El componente consulta `GET /api/events?q=…&limit=8`, endpoint **aún no implementado** en
+> el backend (ver §8). Hasta que exista, el autocompletado no devuelve resultados.
 
-Formulario de creación de evento:
+### 4.5 Publicación de Eventos (para organizadores)
 
-1. **Información básica:** Nombre, categoría, descripción
-2. **Fecha y hora:** Selector de fecha/hora, duración, recurrencia
-3. **Ubicación:** Búsqueda de venue o pin manual en mapa
-4. **Artistas:** Agregar artistas (con lookup si ya tienen perfil) o crear nuevo
-5. **Multimedia:** Upload de imagen de portada, galería, links de audio/video
-6. **Entradas:** Precio, link de venta, aforo máximo
-7. **Preview:** Vista previa del popup y panel antes de publicar
+Área de organizador protegida por rol (`organizerGuard`), con dos rutas:
 
-### 4.6 Perfiles de Artista
+- `/organizer` — **dashboard**: lista de los eventos propios (`GET /api/events/mine`) con
+  acciones de editar y eliminar.
+- `/organizer/events/new` y `/organizer/events/:id/edit` — **formulario** de creación/edición.
+
+**Formulario actual** — página única con secciones agrupadas (no stepper): ✅
+
+1. **Detalles:** título, categoría (selector visual por color), descripción
+2. **Fecha y lugar:** inicio, fin (opcional) y selección de venue — elegir uno existente
+   (`GET /api/venues`) o crear uno nuevo inline (nombre, dirección, ciudad, país, lat/lng)
+3. **Entradas:** entrada libre / precio + moneda, link de venta, aforo
+4. **Multimedia:** URLs de imagen de portada, galería y video (por enlace, sin upload)
+
+**Pendiente** 🚧: stepper por pasos, upload de archivos a S3/R2, selección de venue con pin
+sobre el mapa, asociación de artistas desde el formulario, recurrencia y vista previa del
+popup/panel antes de publicar.
+
+### 4.6 Perfiles de Artista 🚧
+
+*Aún no implementado en el frontend.* El backend ya expone `GET /api/artists/{id}` y los
+endpoints de follow/unfollow; el panel lateral muestra las cards de artista del evento pero el
+mini-perfil expandido y la página dedicada están pendientes.
 
 - Página de perfil dedicada accesible desde el panel lateral
 - Portfolio multimedia: tracks, videos, galería
@@ -158,13 +178,19 @@ Formulario de creación de evento:
 
 ### 4.7 Sistema de Usuarios
 
-| Rol | Capacidades |
-|---|---|
-| **Visitante** | Ver mapa, popup, panel de detalles, buscar |
-| **Usuario registrado** | + Guardar eventos, seguir artistas, recibir notificaciones |
-| **Artista** | + Crear perfil artístico, asociarse a eventos |
-| **Organizador** | + Publicar y administrar eventos |
-| **Admin** | + Moderar contenido, aprobar publicaciones |
+| Rol | `UserRole` | Capacidades |
+|---|---|---|
+| **Visitante** | *(sin sesión)* | Ver mapa, popup, panel de detalles, buscar |
+| **Usuario registrado** | `attendee` | + Guardar eventos, seguir artistas, recibir notificaciones |
+| **Artista** | `artist` | + Crear perfil artístico, asociarse a eventos |
+| **Organizador** | `organizer` | + Publicar y administrar sus eventos (`/organizer`) |
+| **Admin** | `admin` | + Administrar cualquier evento, moderar y aprobar publicaciones |
+
+El alta pública (`POST /api/auth/register`) solo admite `attendee` u `organizer` — los roles
+`artist` y `admin` se asignan internamente — y la pantalla de registro ofrece ese selector.
+Las reglas viven en el dominio
+(`User.can_manage_event`, `User.has_any_role`) y se aplican en el borde HTTP con
+`require_role(...)`; `GET /api/events/mine` está abierto a `organizer`, `admin` y `artist`.
 
 ---
 
@@ -179,14 +205,20 @@ Formulario de creación de evento:
 
 ### 5.2 Paleta de Colores por Categoría
 
-| Categoría | Color de acento |
-|---|---|
-| Música | `#7C3AED` — Violeta |
-| Arte Visual | `#F59E0B` — Ámbar |
-| Teatro / Danza | `#EC4899` — Rosa |
-| Cine | `#3B82F6` — Azul |
-| Spoken Word | `#10B981` — Esmeralda |
-| Festival | `#EF4444` — Rojo |
+Fuente de verdad: `CATEGORY_COLORS` / `CATEGORY_ICONS` / `CATEGORY_LABELS` en
+`frontend/src/app/core/models/event.model.ts`.
+
+| Categoría (`EventCategory`) | Etiqueta | Color de acento |
+|---|---|---|
+| `music` | Música | `#7c3aed` — Violeta |
+| `visual_art` | Arte Visual | `#f59e0b` — Ámbar |
+| `theater` | Teatro | `#ec4899` — Rosa |
+| `dance` | Danza | `#f97316` — Naranja |
+| `spoken_word` | Spoken Word | `#10b981` — Esmeralda |
+| `cinema` | Cine | `#3b82f6` — Azul |
+| `festival` | Festival | `#ef4444` — Rojo |
+| `workshop` | Taller | `#06b6d4` — Cian |
+| `street_performance` | Performance Callejero | `#84cc16` — Lima |
 
 ### 5.3 Layout General
 
@@ -231,15 +263,19 @@ Formulario de creación de evento:
 ### 6.1 Stack Tecnológico Recomendado
 
 **Frontend — Angular**
-- **Framework:** Angular 17+ con Standalone Components y Signals
-- **Mapa:** `ngx-mapbox-gl` (wrapper oficial de Mapbox GL JS para Angular)
-- **Estilos:** Tailwind CSS + Angular Material (componentes base: dialogs, overlays, sliders)
-- **Animaciones:** Angular Animations API (`@angular/animations`) + CSS custom transitions
-- **Estado:** Angular Signals + `effect()` para reactividad; NgRx Signal Store para estado complejo
-- **HTTP:** `HttpClient` con interceptors para auth y error handling
-- **Audio:** Howler.js (integrado en servicio Angular `AudioPlayerService`)
+- **Framework:** Angular 21 con Standalone Components y Signals (sin NgModules)
+- **Mapa:** `maplibre-gl` v5 usado directamente (sin wrapper); estilo oscuro de OpenFreeMap.
+  No se usa Mapbox ni `ngx-mapbox-gl` — MapLibre es open source y no requiere API key
+- **Estilos:** Tailwind CSS v4 (vía `@tailwindcss/postcss` + Vite) + SCSS por componente.
+  Sin Angular Material: los overlays, popups y el panel son componentes propios
+- **Animaciones:** transiciones CSS custom (`@angular/animations` disponible, poco usado)
+- **Estado:** Angular Signals + `computed()`/`effect()` en servicios `providedIn: 'root'`.
+  NgRx Signal Store queda como opción futura si el estado se vuelve complejo
+- **HTTP:** `HttpClient` con `authInterceptor` funcional (adjunta el Bearer token)
 - **Formularios:** Reactive Forms con validadores custom
-- **Routing:** Angular Router con lazy loading por módulo funcional
+- **Routing:** Angular Router con lazy `loadComponent` + guards por rol
+- **Tests:** Vitest (jsdom) vía `@angular/build:unit-test`
+- **Audio:** Howler.js en un `AudioPlayerService` 🚧 (pendiente, ver §4.3)
 
 **Backend — Python**
 - **Framework:** **FastAPI** — async, alto rendimiento, auto-genera OpenAPI docs (Swagger UI en `/docs`, ReDoc en `/redoc`)
@@ -247,17 +283,19 @@ Formulario de creación de evento:
 - **ORM:** SQLAlchemy 2.0 (async) + **GeoAlchemy2** para queries PostGIS
 - **Migraciones:** Alembic
 - **Validación:** Pydantic v2 (integrado en FastAPI)
-- **Base de Datos:** PostgreSQL con extensión **PostGIS** (queries geoespaciales)
-- **Cache:** Redis con `redis-py` async — eventos por geohash, sesiones
-- **Storage:** AWS S3 o Cloudflare R2 con `boto3` (imágenes, audio)
-- **Tareas en background:** Celery + Redis Broker (envío de notificaciones push)
-- **Server:** Uvicorn + Gunicorn (producción)
-- **CDN:** Cloudflare
+- **Base de Datos:** PostgreSQL 16 + **PostGIS** 3.4 (imagen `postgis/postgis:16-3.4`)
+- **Server:** Uvicorn (dev, `--reload`); + Gunicorn en producción
+- **Gestión de deps:** `uv` (Python 3.13)
+- **Cache:** Redis — contenedor levantado y `REDIS_URL` configurada, pero el caché por
+  geohash aún **no está implementado** 🚧
+- **Storage:** AWS S3 o Cloudflare R2 con `boto3` (imágenes, audio) 🚧
+- **Tareas en background:** Celery + Redis Broker (notificaciones push) 🚧
+- **CDN:** Cloudflare 🚧
 
 **Autenticación**
-- Backend: `python-jose` para JWT access/refresh tokens + `bcrypt` para hashing de contraseñas
-- Providers OAuth: Google, Apple (via `authlib`)
-- Frontend: Interceptor HTTP en Angular + guard de rutas por rol
+- Backend: `python-jose` para JWT access/refresh tokens + `bcrypt` para hashing de contraseñas ✅
+- Frontend: `authInterceptor` + `organizerGuard` (guard de ruta por rol) ✅
+- Providers OAuth: Google, Apple (via `authlib`) 🚧
 
 **Infraestructura**
 - Frontend: Netlify o Firebase Hosting (Angular SPA estática)
@@ -333,6 +371,42 @@ backend/app/
 
 > El flujo de una petición: **route** (traduce HTTP → comando) → **use case** (orquesta vía ports) → **repository** (SQLAlchemy/PostGIS) → **mapper** (ORM → entidad) → **presenter** (entidad → schema Pydantic) → respuesta JSON. Los errores de negocio fluyen como `DomainError` y se mapean a HTTP en el borde.
 
+### 6.4 Estructura de carpetas del frontend
+
+```
+frontend/src/app/
+├── core/
+│   ├── models/                  # Interfaces TS espejo de los schemas del backend
+│   ├── services/                # AuthService, EventService, VenueService, GeolocationService
+│   ├── guards/organizer.guard.ts# Protege las rutas /organizer por rol
+│   └── interceptors/auth.interceptor.ts
+├── features/
+│   ├── map/                     # Mapa MapLibre — ruta por defecto ''
+│   ├── events/
+│   │   ├── event-panel/         # Panel derecho: lista de eventos top ⇄ detalle
+│   │   └── event-popup/         # (el popup se renderiza hoy desde map.component)
+│   ├── search/search-bar.component.ts
+│   ├── auth/auth.component.ts   # ruta 'auth' — login + registro
+│   └── organizer/
+│       ├── organizer-dashboard/ # ruta 'organizer'
+│       └── event-form/          # rutas 'organizer/events/new' y '…/:id/edit'
+├── app.routes.ts                # rutas lazy con loadComponent
+└── app.config.ts                # providers (router, HttpClient + interceptor)
+```
+
+**Rutas registradas:**
+
+| Ruta | Componente | Guard |
+|---|---|---|
+| `''` | `MapComponent` | — |
+| `auth` | `AuthComponent` | — |
+| `organizer` | `OrganizerDashboardComponent` | `organizerGuard` |
+| `organizer/events/new` | `EventFormComponent` | `organizerGuard` |
+| `organizer/events/:id/edit` | `EventFormComponent` | `organizerGuard` |
+| `**` | redirect a `''` | — |
+
+> La URL base de la API vive en `src/environments/environment.ts` (`http://localhost:8000/api`).
+
 ---
 
 ## 7. Modelos de Datos
@@ -362,24 +436,27 @@ class EventCategory(str, Enum):
     cinema = "cinema"
     festival = "festival"
     workshop = "workshop"
+    street_performance = "street_performance"
 
 class EventStatus(str, Enum):
     draft = "draft"
+    pending = "pending"        # publicado por el organizador, esperando moderación
     published = "published"
     cancelled = "cancelled"
     past = "past"
 
 class EventBase(BaseModel):
     title: str
-    description: str
     category: EventCategory
     start_date: datetime
-    end_date: datetime
-    cover_image: str
+    description: Optional[str] = None
+    end_date: Optional[datetime] = None
+    cover_image: Optional[str] = None
     gallery: list[str] = []
+    video_url: Optional[str] = None
     ticket_url: Optional[HttpUrl] = None
     ticket_price: Optional[float] = None
-    currency: Optional[str] = None
+    currency: str = "MXN"      # ⚠️ default heredado; los datos sembrados usan PEN (Lima)
     is_free: bool = False
     capacity: Optional[int] = None
     tags: list[str] = []
@@ -447,6 +524,7 @@ class VenueBase(BaseModel):
     city: str
     country: str
     coordinates: Coordinates
+    description: Optional[str] = None
     google_maps_url: Optional[HttpUrl] = None
     capacity: Optional[int] = None
     accessibility: list[str] = []
@@ -466,20 +544,33 @@ class UserRole(str, Enum):
     organizer = "organizer"
     admin = "admin"
 
-class LocationPreferences(BaseModel):
-    default_coordinates: Coordinates
-    default_radius_km: int = 5
-
 class UserResponse(BaseModel):
     id: str
     email: str
     name: str
     avatar: Optional[str] = None
     role: UserRole
+    is_active: bool = True
     notifications_enabled: bool = True
-    location_preferences: Optional[LocationPreferences] = None
     saved_event_ids: list[str] = []
     followed_artist_ids: list[str] = []
+```
+
+> **Preferencias de ubicación:** la entidad de dominio `User` no anida un objeto
+> `LocationPreferences`; guarda campos planos `pref_lat`, `pref_lng` y `pref_radius_km` (default
+> `5`), y expone la propiedad derivada `User.location_preference -> Coordinates | None`.
+
+```python
+# app/domain/entities.py — reglas de negocio en la entidad
+class User:
+    def has_any_role(self, *roles: UserRole) -> bool: ...
+    def can_manage_event(self, organizer_id: str) -> bool:
+        """Un evento lo administra su organizador o un admin."""
+
+class Event:
+    @property
+    def is_visible(self) -> bool:
+        """Los borradores nunca se exponen por endpoints públicos de lectura."""
 ```
 
 ### 7.5 Modelos de Base de Datos (SQLAlchemy + GeoAlchemy2)
@@ -511,33 +602,58 @@ class EventModel(Base):
 
 ## 8. API — Endpoints Clave
 
+Todos montados bajo el prefijo `/api`. Documentación interactiva en `/docs` (Swagger) y
+`/redoc`; `/` redirige a `/docs`.
+
+### Auth
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `POST` | `/api/auth/register` | Registro → `TokenResponse` (201) |
+| `POST` | `/api/auth/login` | Login → access + refresh token |
+| `POST` | `/api/auth/refresh` | Renovar tokens a partir del refresh token |
+| `GET` | `/api/auth/me` | Usuario autenticado actual |
+
 ### Eventos
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| `GET` | `/api/events` | Listar eventos con filtros |
 | `GET` | `/api/events/nearby` | Eventos dentro de radio geoespacial |
+| `GET` | `/api/events/mine` | Eventos del organizador autenticado |
 | `GET` | `/api/events/:id` | Detalle de evento |
-| `POST` | `/api/events` | Crear evento (auth: organizer) |
-| `PATCH` | `/api/events/:id` | Actualizar evento |
-| `DELETE` | `/api/events/:id` | Eliminar evento |
+| `POST` | `/api/events` | Crear evento (auth: organizer/admin) |
+| `PATCH` | `/api/events/:id` | Actualizar evento (auth: dueño o admin) |
+| `DELETE` | `/api/events/:id` | Eliminar evento (auth: dueño o admin) |
+| `POST` | `/api/events/:id/save` | Guardar evento en favoritos (204) |
+| `DELETE` | `/api/events/:id/save` | Quitar de favoritos (204) |
+| `GET` | `/api/events` | 🚧 Listar/buscar eventos con filtros — **pendiente**; lo necesita la barra de búsqueda global (§4.4) |
+
+### Venues
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `GET` | `/api/venues` | Listar venues (alimenta el selector del formulario de evento) |
+| `GET` | `/api/venues/:id` | Detalle de venue |
+| `POST` | `/api/venues` | Crear venue (auth: organizer/admin) |
 
 ### Query Geoespacial (events/nearby)
 
+Parámetros implementados (todos en `snake_case`, igual que la respuesta):
+
 ```
 GET /api/events/nearby?
-  lat=19.4326&
-  lng=-99.1332&
-  radius=5000&          // metros
-  category=music&
-  startDate=2026-06-14&
-  endDate=2026-06-21&
-  isFree=false&
-  limit=50&
-  offset=0
+  lat=-12.0464&         // requerido, -90..90
+  lng=-77.0428&         // requerido, -180..180
+  radius=5000&          // metros, 100..100000 (default 5000)
+  category=music&       // opcional, EventCategory
+  is_free=false&        // opcional
+  limit=50              // 1..100 (default 50)
 ```
 
-**Respuesta:**
+🚧 Filtros por rango de fechas (`start_date`/`end_date`) aún no implementados.
+
+**Respuesta** (`NearbyEventsResponse` → items de tipo `EventSummary`, aligerado para el mapa):
+
 ```json
 {
   "events": [
@@ -545,20 +661,26 @@ GET /api/events/nearby?
       "id": "...",
       "title": "...",
       "category": "music",
-      "startDate": "...",
-      "coordinates": [-99.1332, 19.4326],
-      "distanceMeters": 1240,
-      "coverImage": "...",
-      "isFree": false,
-      "ticketPrice": 150,
-      "venue": { "name": "Foro Indie Rocks", "address": "..." },
-      "artists": [{ "id": "...", "name": "...", "profileImage": "..." }]
+      "status": "published",
+      "start_date": "2026-07-25T21:00:00",
+      "cover_image": "...",
+      "is_free": false,
+      "ticket_price": 60,
+      "currency": "PEN",
+      "coordinates": { "longitude": -77.0428, "latitude": -12.0464 },
+      "distance_meters": 1240,
+      "venue_name": "Sargento Pimienta",
+      "artist_names": ["..."]
     }
   ],
   "total": 23,
-  "hasMore": false
+  "next_cursor": null
 }
 ```
+
+> El detalle completo (`GET /api/events/:id`) devuelve `EventResponse`, que sí incluye
+> `description`, `gallery`, `video_url`, `tags`, el `venue` completo y las `artists` como
+> objetos `ArtistSummary`.
 
 ### Artistas
 
@@ -577,17 +699,22 @@ GET /api/events/nearby?
 
 - **LCP (Largest Contentful Paint):** < 2.5s
 - **Carga inicial del mapa:** < 1.5s
-- **Respuesta de API geoespacial:** < 200ms (con índice GiST en PostGIS)
-- **Eventos en caché (Redis):** TTL 5 min por geohash
-- **Imágenes:** WebP con lazy loading; thumbnails redimensionados en CDN
+- **Respuesta de API geoespacial:** < 200ms (con índice GiST en PostGIS) ✅
+- **Eventos en caché (Redis):** TTL 5 min por geohash 🚧 (Redis levantado, caché sin implementar)
+- **Imágenes:** WebP con lazy loading (`loading="lazy"` ya aplicado en la galería);
+  thumbnails redimensionados en CDN 🚧
 
 ### Escalabilidad
 
-- Paginación por cursor (no offset) para listas de eventos
-- Rate limiting: 100 req/min para endpoints públicos, 20 req/min para autenticados
-- Índice GiST en columna de coordenadas para queries geoespaciales eficientes
+- Índice GiST en columna de coordenadas para queries geoespaciales eficientes ✅
+- Paginación por cursor (no offset) para listas de eventos 🚧 — `NearbyEventsResponse` ya
+  reserva el campo `next_cursor`, pero hoy solo se aplica `limit`
+- Rate limiting: 100 req/min públicos, 20 req/min autenticados 🚧 — `slowapi` está instalado y
+  el `Limiter` registrado en `main.py`, pero **ningún endpoint declara `@limiter.limit`** todavía
 
-### Accesibilidad
+### Accesibilidad 🚧
+
+*Objetivo, aún sin auditar.*
 
 - WCAG 2.1 AA compliance
 - Navegación por teclado completa en panel lateral
@@ -597,11 +724,12 @@ GET /api/events/nearby?
 
 ### Seguridad
 
-- Autenticación JWT con refresh tokens (`python-jose`, access token 15 min, refresh token 7 días)
-- Validación y sanitización de inputs con **Pydantic v2** (automático en FastAPI)
-- Rate limiting con `slowapi` (wrapper de limits para FastAPI) por IP en endpoints de publicación
-- Moderación de contenido antes de publicar (manual o con moderación AI)
-- CORS configurado para dominios permitidos
+- Autenticación JWT con refresh tokens (`python-jose`, access token 15 min, refresh token 7 días) ✅
+- Validación y sanitización de inputs con **Pydantic v2** (automático en FastAPI) ✅
+- CORS configurado para dominios permitidos (`BACKEND_CORS_ORIGINS`) ✅
+- Autorización por rol en el borde HTTP: `require_role(...)` en `api/deps.py` ✅
+- Rate limiting con `slowapi` por IP en endpoints de publicación 🚧 (ver Escalabilidad)
+- Moderación de contenido antes de publicar (estado `pending`) 🚧
 
 ---
 
@@ -654,26 +782,27 @@ Panel lateral → Sección "Artistas"
 
 ### Fase 1 — MVP (8 semanas)
 
-- [ ] Setup monorepo: Angular app + FastAPI app + Docker Compose (Postgres+PostGIS, Redis)
-- [ ] Modelos SQLAlchemy + migraciones Alembic (events, venues, artists, users)
-- [ ] Auth endpoints FastAPI: register, login, refresh token
-- [ ] Angular: estructura de módulos, routing, AuthGuard, interceptor JWT
-- [ ] Mapa base con `ngx-mapbox-gl` + geolocalización del navegador
-- [ ] Endpoint `GET /api/events/nearby` con query PostGIS
-- [ ] Marcadores en mapa + clustering por categoría
-- [ ] Popup del evento (Angular overlay/CDK)
-- [ ] Panel lateral básico (Angular Animation slide-in)
-- [ ] Filtro por radio y categoría
+- [x] Setup monorepo: Angular app + FastAPI app + Docker Compose (Postgres+PostGIS, Redis)
+- [x] Modelos SQLAlchemy + migraciones Alembic (events, venues, artists, users) + `seed.py`
+- [x] Auth endpoints FastAPI: register, login, refresh token, me
+- [x] Angular: standalone components, routing lazy, guard por rol, interceptor JWT
+- [x] Mapa base con MapLibre GL + geolocalización del navegador
+- [x] Endpoint `GET /api/events/nearby` con query PostGIS
+- [x] Marcadores en mapa por categoría
+- [ ] Clustering de marcadores
+- [x] Popup del evento (marcador → tarjeta HTML custom sobre el mapa)
+- [x] Panel lateral (lista de eventos top ⇄ detalle, responsive/bottom sheet)
+- [x] Filtro por radio y categoría + círculo de radio auto-ajustado
 - [ ] Deploy inicial: Netlify (Angular) + Railway (FastAPI + Postgres + Redis)
 
 ### Fase 2 — Core Features (6 semanas)
 
-- [ ] Perfiles de artista completos con galería y social links
-- [ ] Upload multimedia: endpoint FastAPI con `python-multipart` → S3/R2
-- [ ] Búsqueda global con autocomplete (Angular `HttpClient` + debounce con RxJS)
-- [ ] Sistema de usuarios: guardar eventos, seguir artistas (NgRx Signal Store)
+- [ ] Perfiles de artista completos con galería y social links *(backend listo, falta el frontend)*
+- [ ] Upload multimedia: endpoint FastAPI con `python-multipart` → S3/R2 *(hoy solo por URL)*
+- [ ] Búsqueda global con autocomplete *(UI hecha; falta el endpoint `GET /api/events`)*
+- [ ] Sistema de usuarios: guardar eventos, seguir artistas *(endpoints listos, falta UI)*
 - [ ] Notificaciones push: Web Push API + Celery worker en Python
-- [ ] Panel de administración para organizadores (módulo lazy-loaded en Angular)
+- [x] Panel de administración para organizadores (dashboard + alta/edición de eventos)
 
 ### Fase 3 — Enhancement (4 semanas)
 
@@ -702,5 +831,13 @@ Panel lateral → Sección "Artistas"
 
 ---
 
-*ZoomArtists v1.1 — Specs by Claude · Junio 2026*
+*ZoomArtists v1.2 — Specs by Claude · Julio 2026*
+
 *Rev. 1.1: backend refactorizado a Clean Architecture (capas domain/application/infrastructure/api) + documentación Swagger/OpenAPI en `/docs`.*
+
+*Rev. 1.2 (2026-07-23): sincronización con el código. Stack frontend real (Angular 21 +
+MapLibre GL directo, Tailwind v4, sin Angular Material/NgRx/Mapbox); estructura y rutas del
+frontend (§6.4); área de organizador (§4.5); enums y campos reales de los modelos (§7);
+tabla de endpoints completa con Auth y Venues (§8); parámetros y respuesta reales de
+`/events/nearby`; marcado de estado ✅/🚧 en features y requerimientos no funcionales;
+roadmap actualizado al avance real.*
