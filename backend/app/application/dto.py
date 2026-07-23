@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.entities import Coordinates, Event, EventCategory, EventStatus
+from app.domain.entities import Coordinates, Event, EventCategory, EventStatus, UserRole
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -19,6 +19,7 @@ class RegisterCommand:
     email: str
     name: str
     password: str
+    role: UserRole = UserRole.attendee
 
 
 @dataclass

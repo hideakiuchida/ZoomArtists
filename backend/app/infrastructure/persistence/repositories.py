@@ -166,6 +166,17 @@ class SqlAlchemyVenueRepository(VenueRepository):
         model, lng, lat = row
         return venue_to_domain(model, Coordinates(longitude=lng, latitude=lat))
 
+    async def list_all(self) -> list[Venue]:
+        result = await self._session.execute(
+            select(VenueModel, ST_X(VenueModel.coordinates), ST_Y(VenueModel.coordinates)).order_by(
+                VenueModel.name
+            )
+        )
+        return [
+            venue_to_domain(model, Coordinates(longitude=lng, latitude=lat))
+            for model, lng, lat in result.all()
+        ]
+
     async def add(self, venue: Venue) -> Venue:
         model = VenueModel(
             id=venue.id,
@@ -195,8 +206,7 @@ class SqlAlchemyEventRepository(EventRepository):
     def _to_domain(model: EventModel, lng: float, lat: float) -> Event:
         venue = venue_to_domain(model.venue, Coordinates(longitude=lng, latitude=lat))
         artists = [
-            artist_to_domain(ea.artist)
-            for ea in sorted(model.event_artists, key=lambda x: x.order)
+            artist_to_domain(ea.artist) for ea in sorted(model.event_artists, key=lambda x: x.order)
         ]
         return event_to_domain(model, venue, artists)
 
@@ -266,6 +276,20 @@ class SqlAlchemyEventRepository(EventRepository):
         ]
         return NearbyEventsResult(events=events, total=total)
 
+    async def find_by_organizer(self, organizer_id: str) -> list[Event]:
+        query = (
+            select(EventModel, ST_X(VenueModel.coordinates), ST_Y(VenueModel.coordinates))
+            .join(VenueModel, EventModel.venue_id == VenueModel.id)
+            .options(
+                selectinload(EventModel.venue),
+                selectinload(EventModel.event_artists).selectinload(EventArtist.artist),
+            )
+            .where(EventModel.organizer_id == organizer_id)
+            .order_by(EventModel.start_date.desc())
+        )
+        rows = (await self._session.execute(query)).all()
+        return [self._to_domain(model, lng, lat) for model, lng, lat in rows]
+
     async def add(self, event: Event, artist_ids: list[str]) -> Event:
         model = EventModel(
             id=event.id,
@@ -311,9 +335,7 @@ class SqlAlchemyEventRepository(EventRepository):
 
     async def is_saved(self, user_id: str, event_id: str) -> bool:
         result = await self._session.execute(
-            select(SavedEvent).where(
-                SavedEvent.user_id == user_id, SavedEvent.event_id == event_id
-            )
+            select(SavedEvent).where(SavedEvent.user_id == user_id, SavedEvent.event_id == event_id)
         )
         return result.scalar_one_or_none() is not None
 
@@ -323,9 +345,7 @@ class SqlAlchemyEventRepository(EventRepository):
 
     async def unsave_for_user(self, user_id: str, event_id: str) -> None:
         result = await self._session.execute(
-            select(SavedEvent).where(
-                SavedEvent.user_id == user_id, SavedEvent.event_id == event_id
-            )
+            select(SavedEvent).where(SavedEvent.user_id == user_id, SavedEvent.event_id == event_id)
         )
         saved = result.scalar_one_or_none()
         if saved:

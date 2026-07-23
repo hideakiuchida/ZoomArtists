@@ -21,6 +21,14 @@ class GetVenue:
         return venue
 
 
+class ListVenues:
+    def __init__(self, venues: VenueRepository) -> None:
+        self._venues = venues
+
+    async def execute(self) -> list[Venue]:
+        return await self._venues.list_all()
+
+
 class CreateVenue:
     def __init__(self, venues: VenueRepository) -> None:
         self._venues = venues

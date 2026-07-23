@@ -1,0 +1,118 @@
+<div class="console">
+  <!-- Top bar -->
+  <header class="console-bar">
+    <a routerLink="/" class="brand">
+      <span class="brand-mark">🎭</span>
+      <span class="brand-name">ZoomArtists</span>
+      <span class="brand-tag">Organizador</span>
+    </a>
+    <div class="bar-actions">
+      <a routerLink="/" class="ghost-btn">Ver mapa</a>
+      <span class="who">{{ userName() }}</span>
+      <button class="ghost-btn" (click)="logout()">Salir</button>
+    </div>
+  </header>
+
+  <main class="console-body">
+    <!-- Heading + primary action -->
+    <section class="head">
+      <div class="head-text">
+        <h1>Tus eventos</h1>
+        <p>Publica, edita y gestiona lo que aparece en el mapa.</p>
+      </div>
+      <a routerLink="/organizer/events/new" class="create-btn">
+        <span>＋</span> Crear evento
+      </a>
+    </section>
+
+    <!-- Stats -->
+    @if (!loading() && events().length) {
+      <section class="stats">
+        <div class="stat">
+          <span class="stat-num">{{ stats().total }}</span>
+          <span class="stat-label">Totales</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num accent-green">{{ stats().published }}</span>
+          <span class="stat-label">Publicados</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num accent-amber">{{ stats().review }}</span>
+          <span class="stat-label">Por publicar</span>
+        </div>
+      </section>
+    }
+
+    @if (error()) {
+      <p class="banner-error">{{ error() }}</p>
+    }
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="skeleton-list">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (!events().length) {
+      <!-- Empty state -->
+      <div class="empty">
+        <div class="empty-glyph">🗺️</div>
+        <h2>Aún no tienes eventos</h2>
+        <p>Crea tu primer evento y aparecerá en el mapa para quienes están cerca.</p>
+        <a routerLink="/organizer/events/new" class="create-btn">
+          <span>＋</span> Crear el primero
+        </a>
+      </div>
+    } @else {
+      <!-- Event list -->
+      <ul class="event-list">
+        @for (event of events(); track event.id) {
+          <li
+            class="event-card"
+            [style.--spine]="categoryColor(event)"
+            [class.dimmed]="busyId() === event.id"
+          >
+            <div class="ec-icon">{{ CATEGORY_ICONS[event.category] }}</div>
+            <div class="ec-main">
+              <div class="ec-toprow">
+                <h3 class="ec-title">{{ event.title }}</h3>
+                <span class="status-pill" [attr.data-status]="event.status">
+                  {{ STATUS_LABELS[event.status] }}
+                </span>
+              </div>
+              <div class="ec-meta">
+                <span>{{ CATEGORY_LABELS[event.category] }}</span>
+                <span class="dot">·</span>
+                <span>{{ event.venue.name }}</span>
+                <span class="dot">·</span>
+                <span>{{ formatDate(event.start_date) }}</span>
+              </div>
+            </div>
+            <div class="ec-actions">
+              @if (event.status !== 'published' && event.status !== 'past') {
+                <button
+                  class="act publish"
+                  (click)="publish(event)"
+                  [disabled]="busyId() === event.id"
+                >
+                  Publicar
+                </button>
+              }
+              <button class="act" (click)="edit(event)" [disabled]="busyId() === event.id">
+                Editar
+              </button>
+              <button
+                class="act danger"
+                (click)="remove(event)"
+                [disabled]="busyId() === event.id"
+              >
+                Eliminar
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </main>
+</div>

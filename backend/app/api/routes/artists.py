@@ -22,9 +22,7 @@ async def get_artist(
 @router.post("", response_model=ArtistResponse, status_code=status.HTTP_201_CREATED)
 async def create_artist(
     body: ArtistCreate,
-    current_user: User = Depends(
-        require_role(UserRole.artist, UserRole.organizer, UserRole.admin)
-    ),
+    current_user: User = Depends(require_role(UserRole.artist, UserRole.organizer, UserRole.admin)),
     artists: ArtistRepository = Depends(get_artist_repository),
 ):
     cmd = CreateArtistCommand(

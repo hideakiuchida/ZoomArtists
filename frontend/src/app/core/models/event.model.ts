@@ -51,6 +51,36 @@ export interface EventResponse {
   updated_at: string;
 }
 
+export interface EventCreatePayload {
+  title: string;
+  description?: string | null;
+  category: EventCategory;
+  start_date: string;
+  end_date?: string | null;
+  venue_id: string;
+  ticket_url?: string | null;
+  ticket_price?: number | null;
+  currency?: string;
+  is_free?: boolean;
+  capacity?: number | null;
+  tags?: string[];
+  video_url?: string | null;
+}
+
+export interface EventUpdatePayload {
+  title?: string;
+  description?: string | null;
+  category?: EventCategory;
+  start_date?: string;
+  end_date?: string | null;
+  ticket_url?: string | null;
+  ticket_price?: number | null;
+  is_free?: boolean;
+  capacity?: number | null;
+  tags?: string[];
+  status?: EventStatus;
+}
+
 export interface NearbyEventsResponse {
   events: EventSummary[];
   total: number;

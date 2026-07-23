@@ -1,5 +1,16 @@
 import { Coordinates } from './event.model';
 
+export interface VenueCreatePayload {
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  coordinates: Coordinates;
+  google_maps_url?: string | null;
+  capacity?: number | null;
+  description?: string | null;
+}
+
 export interface VenueResponse {
   id: string;
   name: string;

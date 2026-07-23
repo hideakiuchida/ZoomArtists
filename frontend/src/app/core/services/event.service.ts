@@ -3,8 +3,10 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import {
+  EventCreatePayload,
   EventResponse,
   EventSummary,
+  EventUpdatePayload,
   NearbyEventsQuery,
   NearbyEventsResponse,
 } from '../models/event.model';
@@ -54,6 +56,23 @@ export class EventService {
     this.isPanelOpen.set(false);
     this.isLoadingEvent.set(false);
     this.selectedEvent.set(null);
+  }
+
+  // ── Organizer management ──────────────────────────────────────────────────
+  listMine(): Observable<EventResponse[]> {
+    return this.http.get<EventResponse[]>(`${this.API}/events/mine`);
+  }
+
+  create(payload: EventCreatePayload): Observable<EventResponse> {
+    return this.http.post<EventResponse>(`${this.API}/events`, payload);
+  }
+
+  update(id: string, payload: EventUpdatePayload): Observable<EventResponse> {
+    return this.http.patch<EventResponse>(`${this.API}/events/${id}`, payload);
+  }
+
+  remove(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.API}/events/${id}`);
   }
 
   saveEvent(id: string): Observable<void> {

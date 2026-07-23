@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr
 
 from app.application.dto import TokenPair
@@ -7,6 +9,9 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     name: str
     password: str
+    # Public sign-up may only claim the attendee or organizer role; artist and
+    # admin are granted through other flows.
+    role: Literal["attendee", "organizer"] = "attendee"
 
 
 class LoginRequest(BaseModel):

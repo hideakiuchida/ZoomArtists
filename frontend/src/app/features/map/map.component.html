@@ -13,6 +13,16 @@
       @if (isLoading()) {
         <div class="loading-dot"></div>
       }
+      @if (auth.isLoggedIn()) {
+        @if (auth.isOrganizer()) {
+          <a routerLink="/organizer" class="header-btn primary" title="Panel de organizador">
+            ✎ Mis eventos
+          </a>
+        }
+        <button class="header-btn" (click)="auth.logout()" title="Cerrar sesión">Salir</button>
+      } @else {
+        <a routerLink="/auth" class="header-btn">Iniciar sesión</a>
+      }
     </div>
   </header>
 

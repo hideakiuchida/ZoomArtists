@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from app.application.dto import LoginCommand, RegisterCommand, TokenPair
 from app.application.ports import PasswordHasher, TokenService, UserRepository
-from app.domain.entities import User, UserRole
+from app.domain.entities import User
 from app.domain.errors import AuthenticationError, ConflictError
 
 
@@ -18,9 +18,7 @@ def _issue_tokens(tokens: TokenService, user_id: str) -> TokenPair:
 
 
 class RegisterUser:
-    def __init__(
-        self, users: UserRepository, hasher: PasswordHasher, tokens: TokenService
-    ) -> None:
+    def __init__(self, users: UserRepository, hasher: PasswordHasher, tokens: TokenService) -> None:
         self._users = users
         self._hasher = hasher
         self._tokens = tokens
@@ -33,7 +31,7 @@ class RegisterUser:
             id=str(uuid4()),
             email=cmd.email,
             name=cmd.name,
-            role=UserRole.attendee,
+            role=cmd.role,
             hashed_password=self._hasher.hash(cmd.password),
         )
         user = await self._users.add(user)
@@ -41,9 +39,7 @@ class RegisterUser:
 
 
 class LoginUser:
-    def __init__(
-        self, users: UserRepository, hasher: PasswordHasher, tokens: TokenService
-    ) -> None:
+    def __init__(self, users: UserRepository, hasher: PasswordHasher, tokens: TokenService) -> None:
         self._users = users
         self._hasher = hasher
         self._tokens = tokens

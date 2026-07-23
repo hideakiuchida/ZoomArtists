@@ -16,8 +16,14 @@ from app.infrastructure.persistence.models.user import User, UserRole
 from app.infrastructure.persistence.models.venue import Venue
 
 __all__ = [
-    "User", "UserRole",
+    "User",
+    "UserRole",
     "Venue",
-    "Artist", "ArtistFollow",
-    "Event", "EventArtist", "EventCategory", "EventStatus", "SavedEvent",
+    "Artist",
+    "ArtistFollow",
+    "Event",
+    "EventArtist",
+    "EventCategory",
+    "EventStatus",
+    "SavedEvent",
 ]

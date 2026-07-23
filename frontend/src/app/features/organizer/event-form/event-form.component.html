@@ -1,0 +1,248 @@
+<div class="console">
+  <header class="console-bar">
+    <a routerLink="/organizer" class="brand">
+      <span class="brand-mark">🎭</span>
+      <span class="brand-name">ZoomArtists</span>
+      <span class="brand-tag">Organizador</span>
+    </a>
+    <a routerLink="/organizer" class="ghost-btn">← Volver</a>
+  </header>
+
+  <main class="form-wrap">
+    @if (loading()) {
+      <div class="loading-block">Cargando…</div>
+    } @else {
+      <div class="form-head">
+        <h1>{{ pageTitle() }}</h1>
+        <p>Los datos que completes son lo que verán las personas en el mapa.</p>
+      </div>
+
+      @if (error()) {
+        <p class="banner-error">{{ error() }}</p>
+      }
+
+      <form (ngSubmit)="submit()" class="form-card">
+        <!-- ── Detalles ── -->
+        <section class="group">
+          <h2 class="group-title">Detalles</h2>
+
+          <label class="field">
+            <span class="label">Título</span>
+            <input
+              class="input"
+              name="title"
+              [(ngModel)]="title"
+              placeholder="Ej. Noche de jazz en Barranco"
+              maxlength="120"
+            />
+          </label>
+
+          <div class="field">
+            <span class="label">Categoría</span>
+            <div class="cat-grid">
+              @for (cat of categories; track cat.value) {
+                <button
+                  type="button"
+                  class="cat-chip"
+                  [class.selected]="category === cat.value"
+                  [style.--cat]="cat.color"
+                  (click)="selectCategory(cat.value)"
+                >
+                  <span class="cat-icon">{{ cat.icon }}</span>
+                  <span class="cat-label">{{ cat.label }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <label class="field">
+            <span class="label">Descripción <span class="opt">(opcional)</span></span>
+            <textarea
+              class="input textarea"
+              name="description"
+              [(ngModel)]="description"
+              rows="4"
+              placeholder="Cuenta de qué trata el evento, quién se presenta, qué esperar…"
+            ></textarea>
+          </label>
+        </section>
+
+        <!-- ── Fecha y lugar ── -->
+        <section class="group">
+          <h2 class="group-title">Fecha y lugar</h2>
+
+          <div class="row">
+            <label class="field">
+              <span class="label">Comienza</span>
+              <input
+                class="input"
+                type="datetime-local"
+                name="startDate"
+                [(ngModel)]="startDate"
+              />
+            </label>
+            <label class="field">
+              <span class="label">Termina <span class="opt">(opcional)</span></span>
+              <input
+                class="input"
+                type="datetime-local"
+                name="endDate"
+                [(ngModel)]="endDate"
+              />
+            </label>
+          </div>
+
+          @if (mode() === 'edit') {
+            <div class="field">
+              <span class="label">Lugar</span>
+              <div class="fixed-venue">
+                📍 {{ existingVenueName }}
+                <span class="fixed-note">El lugar no se puede cambiar al editar.</span>
+              </div>
+            </div>
+          } @else {
+            <div class="field">
+              <span class="label">Lugar</span>
+              <div class="seg">
+                <button
+                  type="button"
+                  [class.active]="venueMode === 'existing'"
+                  (click)="venueMode = 'existing'"
+                >
+                  Elegir existente
+                </button>
+                <button
+                  type="button"
+                  [class.active]="venueMode === 'new'"
+                  (click)="venueMode = 'new'"
+                >
+                  Crear nuevo
+                </button>
+              </div>
+            </div>
+
+            @if (venueMode === 'existing') {
+              <label class="field">
+                <span class="label">Selecciona un lugar</span>
+                <select class="input" name="venueId" [(ngModel)]="venueId">
+                  <option value="" disabled>— Elige un lugar —</option>
+                  @for (v of venues(); track v.id) {
+                    <option [value]="v.id">{{ v.name }} · {{ v.city }}</option>
+                  }
+                </select>
+              </label>
+            } @else {
+              <div class="subcard">
+                <div class="row">
+                  <label class="field">
+                    <span class="label">Nombre del lugar</span>
+                    <input class="input" name="vName" [(ngModel)]="vName" placeholder="Ej. Casa Cultural" />
+                  </label>
+                  <label class="field">
+                    <span class="label">Dirección</span>
+                    <input class="input" name="vAddress" [(ngModel)]="vAddress" placeholder="Av. Grau 123" />
+                  </label>
+                </div>
+                <div class="row">
+                  <label class="field">
+                    <span class="label">Ciudad</span>
+                    <input class="input" name="vCity" [(ngModel)]="vCity" />
+                  </label>
+                  <label class="field">
+                    <span class="label">País</span>
+                    <input class="input" name="vCountry" [(ngModel)]="vCountry" />
+                  </label>
+                </div>
+                <div class="row">
+                  <label class="field">
+                    <span class="label">Latitud</span>
+                    <input class="input" type="number" step="any" name="vLat" [(ngModel)]="vLat" placeholder="-12.1215" />
+                  </label>
+                  <label class="field">
+                    <span class="label">Longitud</span>
+                    <input class="input" type="number" step="any" name="vLng" [(ngModel)]="vLng" placeholder="-77.0290" />
+                  </label>
+                </div>
+                <p class="hint">
+                  Copia las coordenadas desde Google Maps: clic derecho sobre el punto → el primer
+                  número es la latitud, el segundo la longitud.
+                </p>
+              </div>
+            }
+          }
+        </section>
+
+        <!-- ── Entradas ── -->
+        <section class="group">
+          <h2 class="group-title">Entradas</h2>
+
+          <label class="toggle">
+            <input type="checkbox" name="isFree" [(ngModel)]="isFree" />
+            <span class="track"><span class="thumb"></span></span>
+            <span>Evento gratuito</span>
+          </label>
+
+          @if (!isFree) {
+            <div class="row">
+              <label class="field">
+                <span class="label">Precio</span>
+                <input class="input" type="number" min="0" step="0.5" name="ticketPrice" [(ngModel)]="ticketPrice" placeholder="0.00" />
+              </label>
+              <label class="field narrow">
+                <span class="label">Moneda</span>
+                <select class="input" name="currency" [(ngModel)]="currency">
+                  @for (c of currencies; track c) {
+                    <option [value]="c">{{ c }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <label class="field">
+              <span class="label">Enlace de entradas <span class="opt">(opcional)</span></span>
+              <input class="input" name="ticketUrl" [(ngModel)]="ticketUrl" placeholder="https://…" />
+            </label>
+          }
+        </section>
+
+        <!-- ── Extras ── -->
+        <section class="group">
+          <h2 class="group-title">Extras</h2>
+          <div class="row">
+            <label class="field">
+              <span class="label">Aforo <span class="opt">(opcional)</span></span>
+              <input class="input" type="number" min="0" name="capacity" [(ngModel)]="capacity" placeholder="Ej. 200" />
+            </label>
+            @if (mode() === 'edit') {
+              <label class="field">
+                <span class="label">Estado</span>
+                <select class="input" name="status" [(ngModel)]="status">
+                  @for (s of statusOptions; track s.value) {
+                    <option [value]="s.value">{{ s.label }}</option>
+                  }
+                </select>
+              </label>
+            }
+          </div>
+          <label class="field">
+            <span class="label">Etiquetas <span class="opt">(separadas por comas)</span></span>
+            <input class="input" name="tags" [(ngModel)]="tags" placeholder="jazz, en vivo, barranco" />
+          </label>
+          <label class="field">
+            <span class="label">Video <span class="opt">(opcional)</span></span>
+            <input class="input" name="videoUrl" [(ngModel)]="videoUrl" placeholder="https://youtube.com/…" />
+          </label>
+        </section>
+
+        <!-- ── Actions ── -->
+        <div class="actions">
+          <button type="button" class="btn-ghost" (click)="cancel()" [disabled]="saving()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Guardando…' : mode() === 'edit' ? 'Guardar cambios' : 'Crear evento' }}
+          </button>
+        </div>
+      </form>
+    }
+  </main>
+</div>

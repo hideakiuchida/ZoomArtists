@@ -1,9 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { tap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
-import { User, TokenResponse } from '../models/user.model';
+import { User, TokenResponse, UserRole } from '../models/user.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -21,16 +21,30 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string): Observable<TokenResponse> {
+  login(email: string, password: string): Observable<User> {
     return this.http.post<TokenResponse>(`${this.API}/auth/login`, { email, password }).pipe(
-      tap(tokens => this.storeSession(tokens)),
+      tap(tokens => this.persistTokens(tokens)),
+      switchMap(() => this.fetchMe()),
     );
   }
 
-  register(name: string, email: string, password: string): Observable<TokenResponse> {
-    return this.http.post<TokenResponse>(`${this.API}/auth/register`, { name, email, password }).pipe(
-      tap(tokens => this.storeSession(tokens)),
-    );
+  register(
+    name: string,
+    email: string,
+    password: string,
+    role: Extract<UserRole, 'attendee' | 'organizer'> = 'attendee',
+  ): Observable<User> {
+    return this.http
+      .post<TokenResponse>(`${this.API}/auth/register`, { name, email, password, role })
+      .pipe(
+        tap(tokens => this.persistTokens(tokens)),
+        switchMap(() => this.fetchMe()),
+      );
+  }
+
+  isOrganizer(): boolean {
+    const role = this.currentUser()?.role;
+    return role === 'organizer' || role === 'admin' || role === 'artist';
   }
 
   logout(): void {
@@ -55,10 +69,9 @@ export class AuthService {
     );
   }
 
-  private storeSession(tokens: TokenResponse): void {
+  private persistTokens(tokens: TokenResponse): void {
     localStorage.setItem('access_token', tokens.access_token);
     localStorage.setItem('refresh_token', tokens.refresh_token);
     this.isLoggedIn.set(true);
-    this.fetchMe().subscribe();
   }
 }

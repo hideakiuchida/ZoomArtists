@@ -11,7 +11,7 @@ from app.api.schemas.user import UserResponse
 from app.application.auth import LoginUser, RefreshTokens, RegisterUser
 from app.application.dto import LoginCommand, RegisterCommand
 from app.application.ports import PasswordHasher, TokenService, UserRepository
-from app.domain.entities import User
+from app.domain.entities import User, UserRole
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,7 +24,12 @@ async def register(
     tokens: TokenService = Depends(get_token_service),
 ):
     pair = await RegisterUser(users, hasher, tokens).execute(
-        RegisterCommand(email=body.email, name=body.name, password=body.password)
+        RegisterCommand(
+            email=body.email,
+            name=body.name,
+            password=body.password,
+            role=UserRole(body.role),
+        )
     )
     return TokenResponse.from_pair(pair)
 

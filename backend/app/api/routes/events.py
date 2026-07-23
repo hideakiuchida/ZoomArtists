@@ -18,6 +18,7 @@ from app.application.events import (
     DeleteEvent,
     GetEvent,
     GetNearbyEvents,
+    ListOrganizerEvents,
     SaveEvent,
     UnsaveEvent,
     UpdateEvent,
@@ -51,6 +52,15 @@ async def get_nearby_events(
     return NearbyEventsResponse.from_result(result)
 
 
+@router.get("/mine", response_model=list[EventResponse])
+async def get_my_events(
+    current_user: User = Depends(require_role(UserRole.organizer, UserRole.admin, UserRole.artist)),
+    events: EventRepository = Depends(get_event_repository),
+):
+    owned = await ListOrganizerEvents(events).execute(current_user)
+    return [EventResponse.from_entity(e) for e in owned]
+
+
 @router.get("/{event_id}", response_model=EventResponse)
 async def get_event(
     event_id: str,
@@ -63,9 +73,7 @@ async def get_event(
 @router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 async def create_event(
     body: EventCreate,
-    current_user: User = Depends(
-        require_role(UserRole.organizer, UserRole.admin, UserRole.artist)
-    ),
+    current_user: User = Depends(require_role(UserRole.organizer, UserRole.admin, UserRole.artist)),
     events: EventRepository = Depends(get_event_repository),
     venues: VenueRepository = Depends(get_venue_repository),
 ):

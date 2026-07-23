@@ -1,7 +1,7 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -21,6 +21,28 @@ import { AuthService } from '../../core/services/auth.service';
           <input placeholder="Nombre" [(ngModel)]="name" class="auth-input" />
         }
         <input placeholder="Email" [(ngModel)]="email" type="email" class="auth-input" />
+
+        @if (mode() === 'register') {
+          <div class="role-picker">
+            <span class="role-label">Quiero</span>
+            <div class="role-seg">
+              <button
+                type="button"
+                [class.active]="role() === 'attendee'"
+                (click)="role.set('attendee')"
+              >
+                Descubrir eventos
+              </button>
+              <button
+                type="button"
+                [class.active]="role() === 'organizer'"
+                (click)="role.set('organizer')"
+              >
+                Organizar eventos
+              </button>
+            </div>
+          </div>
+        }
         <input placeholder="Contraseña" [(ngModel)]="password" type="password" class="auth-input" />
 
         @if (error()) {
@@ -74,13 +96,26 @@ import { AuthService } from '../../core/services/auth.service';
     .auth-error { color: #ef4444; font-size: 0.8rem; text-align: center; margin: 0; }
     .auth-back { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 0.8rem;
       cursor: pointer; text-align: center; &:hover { color: #fff; } }
+    .role-picker { display: flex; flex-direction: column; gap: 6px; }
+    .role-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+    .role-seg {
+      display: flex; gap: 4px; padding: 3px; border-radius: 9px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    }
+    .role-seg button {
+      flex: 1; padding: 8px; background: none; border: none; border-radius: 6px;
+      color: rgba(255,255,255,0.55); font-size: 0.8rem; cursor: pointer; transition: all 0.15s;
+      &.active { background: #7c3aed; color: #fff; font-weight: 600; }
+    }
   `],
 })
 export class AuthComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   mode = signal<'login' | 'register'>('login');
+  role = signal<'attendee' | 'organizer'>('attendee');
   name = '';
   email = '';
   password = '';
@@ -92,15 +127,20 @@ export class AuthComponent {
     this.isLoading.set(true);
     const obs = this.mode() === 'login'
       ? this.authService.login(this.email, this.password)
-      : this.authService.register(this.name, this.email, this.password);
+      : this.authService.register(this.name, this.email, this.password, this.role());
 
     obs.subscribe({
-      next: () => this.router.navigate(['/']),
+      next: () => this.router.navigateByUrl(this.nextUrl()),
       error: (err) => {
         this.error.set(err?.error?.detail ?? 'Error al autenticar');
         this.isLoading.set(false);
       },
     });
+  }
+
+  private nextUrl(): string {
+    const next = this.route.snapshot.queryParamMap.get('next');
+    return next && next.startsWith('/') ? next : '/';
   }
 
   goBack(): void {

@@ -51,6 +51,9 @@ class VenueRepository(ABC):
     async def get_by_id(self, venue_id: str) -> Venue | None: ...
 
     @abstractmethod
+    async def list_all(self) -> list[Venue]: ...
+
+    @abstractmethod
     async def add(self, venue: Venue) -> Venue: ...
 
 
@@ -60,6 +63,9 @@ class EventRepository(ABC):
 
     @abstractmethod
     async def find_nearby(self, query: NearbyQuery) -> NearbyEventsResult: ...
+
+    @abstractmethod
+    async def find_by_organizer(self, organizer_id: str) -> list[Event]: ...
 
     @abstractmethod
     async def add(self, event: Event, artist_ids: list[str]) -> Event: ...

@@ -34,6 +34,16 @@ class GetEvent:
         return event
 
 
+class ListOrganizerEvents:
+    """Every event owned by the acting organizer, drafts included."""
+
+    def __init__(self, events: EventRepository) -> None:
+        self._events = events
+
+    async def execute(self, actor: User) -> list[Event]:
+        return await self._events.find_by_organizer(actor.id)
+
+
 class CreateEvent:
     def __init__(self, events: EventRepository, venues: VenueRepository) -> None:
         self._events = events

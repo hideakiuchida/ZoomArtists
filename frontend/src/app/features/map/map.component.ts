@@ -9,10 +9,12 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import * as maplibregl from 'maplibre-gl';
 
 import { EventService } from '../../core/services/event.service';
 import { GeolocationService } from '../../core/services/geolocation.service';
+import { AuthService } from '../../core/services/auth.service';
 import { EventSummary, EventCategory, CATEGORY_COLORS, CATEGORY_ICONS } from '../../core/models/event.model';
 import { EventPanelComponent } from '../events/event-panel/event-panel.component';
 import { SearchBarComponent } from '../search/search-bar.component';
@@ -22,7 +24,7 @@ type RadiusOption = 1000 | 5000 | 10000 | 25000;
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [CommonModule, EventPanelComponent, SearchBarComponent],
+  imports: [CommonModule, RouterLink, EventPanelComponent, SearchBarComponent],
   templateUrl: './map.component.html',
   styleUrl: './map.component.scss',
 })
@@ -50,6 +52,7 @@ export class MapComponent implements OnInit, OnDestroy {
 
   private eventService = inject(EventService);
   private geoService = inject(GeolocationService);
+  readonly auth = inject(AuthService);
 
   selectedRadius = signal<RadiusOption>(5000);
   activeCategory = signal<EventCategory | null>(null);
